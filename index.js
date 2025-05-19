@@ -23,15 +23,29 @@ app.get('/', async (req, res) => {
     const newFeed = new RSS({
       title: feed.title || 'Remapped Feed',
       description: feed.description || '',
-      feed_url: 'https://yourdomain.com/',
-      site_url: 'https://yourdomain.com/',
+      feed_url: 'https://rss-remap-metricool.onrender.com/',
+      site_url: 'https://rss-remap-metricool.onrender.com/',
       language: 'en',
     });
 
     feed.items.forEach(item => {
+      // Get image URL if available
+      const imgUrl = (
+        (item.enclosure && item.enclosure.url) ||
+        (item['media:content'] && item['media:content'].url)
+      ) || null;
+
+      // Build description with or without image
+      let desc = item.contentSnippet || item.content || item.description || '';
+      if (imgUrl) {
+        desc = `<![CDATA[<p><img src="${imgUrl}" alt=""/></p>${desc}]]>`;
+      } else {
+        desc = `<![CDATA[${desc}]]>`;
+      }
+
       newFeed.item({
         title: item.title,
-        description: item.contentSnippet || item.content || item.description || '',
+        description: desc,
         url: item.link,
         guid: item.guid || item.link,
         date: new Date(item.pubDate || item.isoDate)
