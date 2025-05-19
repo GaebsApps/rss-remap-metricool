@@ -1,0 +1,14 @@
+{
+  "name": "rss-remap-metricool",
+  "version": "1.0.0",
+  "description": "RSS remapper for Metricool Autolist",
+  "main": "index.js",
+  "scripts": {
+    "start": "node index.js"
+  },
+  "dependencies": {
+    "express": "^4.18.2",
+    "rss": "^1.2.2",
+    "rss-parser": "^3.12.0"
+  }
+}
