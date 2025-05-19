@@ -12,7 +12,7 @@ let lastUpdated = 0;
 
 app.get('/', async (req, res) => {
   const now = Date.now();
-  if (cache && now - lastUpdated < 1000 * 60 * 10) {
+  if (cache && (now - lastUpdated < 1000 * 60 * 10)) {
     res.set('Content-Type', 'application/rss+xml');
     return res.send(cache);
   }
@@ -23,37 +23,18 @@ app.get('/', async (req, res) => {
     const newFeed = new RSS({
       title: feed.title || 'Remapped Feed',
       description: feed.description || '',
-      feed_url: 'https://rss-remap-metricool.onrender.com/',
-      site_url: 'https://rss-remap-metricool.onrender.com/',
+      feed_url: 'https://yourdomain.com/',
+      site_url: 'https://yourdomain.com/',
       language: 'en',
     });
 
     feed.items.forEach(item => {
-      // 1) Extract image URL if present
-      const imgUrl =
-        (item.enclosure && item.enclosure.url) ||
-        (item['media:content'] && item['media:content'].url) ||
-        null;
-
-      // 2) Get raw description/text
-      let desc = item.contentSnippet || item.content || item.description || '';
-
-      // 3) Strip out any existing <img> tags to avoid picking up wrong images
-      desc = desc.replace(/<img[^>]*>/g, '');
-
-      // 4) Wrap in CDATA
-      const cdataDesc = `<![CDATA[${desc}]]>`;
-
-      // 5) Build the new item, including enclosure if we have an image
       newFeed.item({
         title: item.title,
-        description: cdataDesc,
+        description: item.contentSnippet || item.content || item.description || '',
         url: item.link,
         guid: item.guid || item.link,
-        date: new Date(item.pubDate || item.isoDate),
-        enclosure: imgUrl
-          ? { url: imgUrl, type: 'image/jpeg' }
-          : undefined
+        date: new Date(item.pubDate || item.isoDate)
       });
     });
 
