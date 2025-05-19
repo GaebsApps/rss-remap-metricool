@@ -12,7 +12,7 @@ let lastUpdated = 0;
 
 app.get('/', async (req, res) => {
   const now = Date.now();
-  if (cache && (now - lastUpdated < 1000 * 60 * 10)) {
+  if (cache && now - lastUpdated < 1000 * 60 * 10) {
     res.set('Content-Type', 'application/rss+xml');
     return res.send(cache);
   }
@@ -29,26 +29,31 @@ app.get('/', async (req, res) => {
     });
 
     feed.items.forEach(item => {
-      // Get image URL if available
-      const imgUrl = (
+      // 1) Extract image URL if present
+      const imgUrl =
         (item.enclosure && item.enclosure.url) ||
-        (item['media:content'] && item['media:content'].url)
-      ) || null;
+        (item['media:content'] && item['media:content'].url) ||
+        null;
 
-      // Build description with or without image
+      // 2) Get raw description/text
       let desc = item.contentSnippet || item.content || item.description || '';
-      if (imgUrl) {
-        desc = `<![CDATA[<p><img src="${imgUrl}" alt=""/></p>${desc}]]>`;
-      } else {
-        desc = `<![CDATA[${desc}]]>`;
-      }
 
+      // 3) Strip out any existing <img> tags to avoid picking up wrong images
+      desc = desc.replace(/<img[^>]*>/g, '');
+
+      // 4) Wrap in CDATA
+      const cdataDesc = `<![CDATA[${desc}]]>`;
+
+      // 5) Build the new item, including enclosure if we have an image
       newFeed.item({
         title: item.title,
-        description: desc,
+        description: cdataDesc,
         url: item.link,
         guid: item.guid || item.link,
-        date: new Date(item.pubDate || item.isoDate)
+        date: new Date(item.pubDate || item.isoDate),
+        enclosure: imgUrl
+          ? { url: imgUrl, type: 'image/jpeg' }
+          : undefined
       });
     });
 
